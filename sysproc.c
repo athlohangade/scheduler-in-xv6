@@ -105,12 +105,10 @@ int sys_proc_stat(void) {
 
     acquire(&ptable.lock);
     for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
-        if (!p->pid)
-            break;
+        if (p->state == UNUSED)
+            continue;
         cprintf("%s\t\t%d\t\t%d\t\t%d\t\t", p->name, p->pid, p->sz, p->tickets);
         switch (p->state) {
-            case UNUSED : cprintf("UNUSED\n");
-                          break;
             case EMBRYO : cprintf("EMBRYO\n");
                           break;
             case SLEEPING : cprintf("SLEEPING\n");
