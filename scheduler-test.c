@@ -92,6 +92,9 @@ int main(int argc, char *argv[]) {
 
     for (i = 0; i < argc - 3; i++) {
         tickets[i] = atoi(argv[i + 3]);
+        if (tickets[i] > MAX_TICKETS_PER_PROCESS) {
+            printf(1, "Maximum tickets allowed for a process is %d\n", MAX_TICKETS_PER_PROCESS);
+            exit();
     }
 /*
     if (sched_test(timeticks, i, tickets) == -1) {
