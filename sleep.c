@@ -3,17 +3,25 @@
 
 int main(int argc, char *argv[]) {
 
-	int sleep_sec;
-	if (argc < 2){
-		printf(1, "Usage: sleep seconds\n");
+	int sleep_ticks;
+
+    /* Check if required inputs are provided */
+	if (argc < 2) {
+		printf(1, "Usage: sleep ticks\n");
 		exit();
 	}
 
-	sleep_sec = atoi(argv[1]);
-	if (sleep_sec > 0){
-		sleep(sleep_sec);
-	} else {
-		printf(1, "Invalid interval %s\n", argv[1]);
+    /* Convert to integer */
+	sleep_ticks = atoi(argv[1]);
+
+    /* Check if the input is positive */
+	if (sleep_ticks > 0) {
+		sleep(sleep_ticks);
 	}
+    /* If input is negative */
+    else {
+		printf(1, "Invalid input\n");
+	}
+
 	exit();
 }

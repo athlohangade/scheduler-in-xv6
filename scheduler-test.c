@@ -101,7 +101,7 @@ int main(int argc, char *argv[]) {
     }
     /* Check if child process more than a particulare limit are to be forked */
     if (argc > MAX_CHILD_PROCESS + 3) {
-        printf(1, "Only %d child process supported", MAX_CHILD_PROCESS);
+        printf(1, "Only %d child process supported\n", MAX_CHILD_PROCESS);
         exit();
     }
 
