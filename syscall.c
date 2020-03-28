@@ -103,7 +103,7 @@ extern int sys_unlink(void);
 extern int sys_wait(void);
 extern int sys_write(void);
 extern int sys_uptime(void);
-extern int sys_proc_stat(void);
+extern int sys_proc_info(void);
 extern int sys_assign_tickets(void);
 
 static int (*syscalls[])(void) = {
@@ -128,7 +128,7 @@ static int (*syscalls[])(void) = {
 [SYS_link]    sys_link,
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
-[SYS_proc_stat] sys_proc_stat,
+[SYS_proc_info] sys_proc_info,
 [SYS_assign_tickets] sys_assign_tickets,
 };
 

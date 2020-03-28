@@ -7,7 +7,7 @@
 #include "proc.h"
 #include "spinlock.h"
 
-struct process_table {                                                          
+struct process_table {
   struct spinlock lock;
   struct proc proc[NPROC];
 };
@@ -89,7 +89,8 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
-  p->tickets = 100;                 // Initial default value
+  p->tickets = 100;                 // Initialize default value of tickets to 100
+  p->ticks = 0;                     // Initialize the ticks count to zero
 
   release(&ptable.lock);
 
@@ -293,6 +294,8 @@ wait(void)
         p->kstack = 0;
         freevm(p->pgdir);
         p->pid = 0;
+        p->tickets = 0;
+        p->ticks = 0;
         p->parent = 0;
         p->name[0] = 0;
         p->killed = 0;
@@ -317,7 +320,7 @@ wait(void)
 // Per-CPU process scheduler.
 // Each CPU calls scheduler() after setting itself up.
 // Scheduler never returns.  It loops, doing:
-//  - choose a process to run
+//  - choose a process to run (lottery scheduler algorithm)
 //  - swtch to start running that process
 //  - eventually that process transfers control
 //      via swtch back to the scheduler.
@@ -327,14 +330,18 @@ scheduler(void)
   struct proc *p;
   struct cpu *c = mycpu();
   c->proc = 0;
-  ushort total_tickets = 0;
-  ushort ticket_no;
-  ushort tickets_passed = 0;
-  
+
+  // Local Variables to track the tickets
+  int total_tickets = 0;
+  int ticket_no;
+  int tickets_passed = 0;
+
   for(;;){
+
     // Enable interrupts on this processor.
     sti();
 
+    // Acquire the process table lock
     acquire(&ptable.lock);
 
     // Loop over process table to calculate the total number of tickets of
@@ -345,12 +352,14 @@ scheduler(void)
       }
     }
 
+    // If RUNNABLE process or processes are found
     if (total_tickets > 0) {
+
         // Generate random number
         ticket_no = generate_random_number(total_tickets);
 
-        // Find the process to be scheduled using the random number generated (the
-        // winning process)
+        // Find the process to be scheduled using the random number generated
+        // (the winning process)
         for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
             if (p->state == RUNNABLE) {
                 tickets_passed += p->tickets;
@@ -360,14 +369,25 @@ scheduler(void)
             }
         }
 
-        // Switch to the winning process.  It is the process's job
-        // to release ptable.lock and then reacquire it
-        // before jumping back to us.
+        // Switch to the winning process.  It is the process's job to release
+        // ptable.lock and then reacquire it before jumping back here.
+
+        // Set the process on this CPU
         c->proc = p;
+        // Switch to user virtual memory
         switchuvm(p);
+        // Increment the ticks count as it is going to be scheduled for this tick
+        p->ticks++;
+        // Set the process state to running
         p->state = RUNNING;
 
+        //cprintf("Total_tickets = %d, random_ticket_no = %d\n", total_tickets, ticket_no);
+
+        // Switch to the kernel stack of the process that is going to be
+        // scheduled now
         swtch(&(c->scheduler), p->context);
+
+        // Switch to kernel virtual memory
         switchkvm();
 
         // Process is done running for now.
@@ -377,6 +397,9 @@ scheduler(void)
         total_tickets = 0;
         tickets_passed = 0;
     }
+    // Release the lock to let the process running on other processor to set
+    // any process's state to RUNNABLE. This is case when no RUNNABLE process is
+    // found.
     release(&ptable.lock);
   }
 }
@@ -461,10 +484,11 @@ sleep(void *chan, struct spinlock *lk)
     acquire(&ptable.lock);  //DOC: sleeplock1
     release(lk);
   }
-  // Go to sleep.
+  // Go to sleep, sleep on chan.
   p->chan = chan;
   p->state = SLEEPING;
 
+  // Call sched which in turn switches to schedueler
   sched();
 
   // Tidy up.

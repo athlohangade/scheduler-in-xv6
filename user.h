@@ -23,7 +23,7 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
-int proc_stat(void);
+int proc_info(processes_info*);
 int assign_tickets(int, int);
 
 // ulib.c

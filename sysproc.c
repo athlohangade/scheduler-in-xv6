@@ -8,9 +8,9 @@
 #include "proc.h"
 #include "spinlock.h"
 
-struct process_table {                                                          
-    struct spinlock lock;                                                         
-    struct proc proc[NPROC];                                                      
+struct process_table {
+    struct spinlock lock;
+    struct proc proc[NPROC];
 };
 extern struct process_table ptable;
 
@@ -97,31 +97,32 @@ sys_uptime(void)
   return xticks;
 }
 
-int sys_proc_stat(void) {
-    
+/* System call that gives process information */
+int sys_proc_info(void) {
+
     struct proc *p;
+    processes_info *information;
 
-    cprintf("NAME\t\tPID\t\tSIZE\t\tTICKETS\t\tSTATE\n");
+    // Get the process info pointer from user space in which information will be
+    // stored
+    if(argptr(0, (char **)(&information), sizeof(information)) < 0)
+        return -1;
 
+    information->num_processes = 0;
+    // Acquire the process table lock
     acquire(&ptable.lock);
+
+    // Get the process information and store it
     for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
         if (p->state == UNUSED)
             continue;
-        cprintf("%s\t\t%d\t\t%d\t\t%d\t\t", p->name, p->pid, p->sz, p->tickets);
-        switch (p->state) {
-            case EMBRYO : cprintf("EMBRYO\n");
-                          break;
-            case SLEEPING : cprintf("SLEEPING\n");
-                          break;
-            case RUNNABLE : cprintf("RUNNABLE\n");
-                          break;
-            case RUNNING : cprintf("RUNNING\n");
-                          break;
-            case ZOMBIE : cprintf("ZOMBIE\n");
-                          break;
-            default     : cprintf("NO STATE\n");
-        }
+
+        information->pids[information->num_processes] = p->pid;
+        information->ticks[information->num_processes] = p->ticks;
+        information->tickets[information->num_processes] = p->tickets;
+        information->num_processes++;
     }
+    // Release the process table lock
     release(&ptable.lock);
     return 0;
 }
@@ -132,12 +133,18 @@ int sys_assign_tickets(void) {
     int pid;
     int tickets;
 
+    // Get the data from user space
     if(argint(0, &pid) < 0)
         return -1;
     if(argint(1, &tickets) < 0)
         return -1;
+    if(pid < 1 || tickets < 1)
+        return -1;
 
+    // Acquire the process table lock
     acquire(&ptable.lock);
+
+    // Find and assign the tickets to the process
     for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
         if (p->pid == pid) {
             p->tickets = tickets;
@@ -145,6 +152,7 @@ int sys_assign_tickets(void) {
             return 0;
         }
     }
+    // Release the process table lock
     release(&ptable.lock);
 
     return -2;
