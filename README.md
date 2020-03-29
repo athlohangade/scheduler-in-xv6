@@ -74,7 +74,8 @@ This project implements the lottery scheduler in xv6, a unix based operating sys
   process sleep for some ticks, retrieve the process info of all children and
   then kill all of them.
 - The test program takes input :
-    1. The timeticks for which parent process must sleep.
+    1. The timeticks for which parent process must sleep. (Generally **1 tick = 10ms**,
+   depends on cpu bus freq. Eg: *300 ticks* corresponds to *3 sec* sleep).
     2. The tickets to be assigned for the parent process.
     3. The tickets to be assigned for the child processes. Depending on number
        of child process tickets given as input, the test program decides the
