@@ -2,6 +2,7 @@
 
 cp -v assign-tickets.c ./xv6/
 cp -v defs.h ./xv6/
+cp -v init.c ./xv6/
 cp -v Makefile ./xv6/
 cp -v param.h ./xv6/
 cp -v proc.c ./xv6/
