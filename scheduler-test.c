@@ -5,36 +5,6 @@
 #define MAX_CHILD_PROCESS   16
 #define MAX_PARENT_YIELDS   100
 
-/* Function to fork the child process and assign tickets */
-int create_process(int tickets) {
-
-    /* Fork the process */
-    int pid = fork();
-
-    /* If the process is child */
-    if (pid == 0) {
-
-        /* Assign the tickets to the child process */
-        if (assign_tickets(getpid(), tickets) == 0) {
-            /* Loop forever */
-            while (1);
-        }
-        /* If assigning the tickets to the process fail */
-        else {
-            printf(1, "Error setting the tickets\n");
-            exit();
-        }
-    }
-    /* If the process is parent */
-    else if (pid > 0) {
-        return pid;
-    }
-    /* If fork fails */
-    else {
-        return -1;
-    }
-}
-
 /* Function to find the pid in the processes information structure */
 int find_index_of_pid(processes_info *information, int pid) {
 
@@ -88,6 +58,99 @@ int wait_for_tickets_to_set(int no_of_children, int *child_pids, int *tickets) {
     return -1;
 }
 
+/* Function to fork the child process and assign tickets */
+int create_process(int tickets) {
+
+    /* Fork the process */
+    int pid;
+    pid = fork();
+
+    /* If the process is child */
+    if (pid == 0) {
+
+        /* Assign the tickets to the child process */
+        if (assign_tickets(getpid(), tickets) == 0) {
+            /* Loop forever */
+            while (1);
+        }
+        /* If assigning the tickets to the process fail */
+        else {
+            printf(1, "Error setting the tickets\n");
+            exit();
+        }
+    }
+    /* If the process is parent */
+    else if (pid > 0) {
+        return pid;
+    }
+    /* If fork fails */
+    else {
+        return -1;
+    }
+}
+
+int create_processes(int *child_pids, int *tickets, int n) {
+
+    int i;
+    int pid;
+    int pfd[2];
+
+    if (pipe(pfd) != 0) {
+        printf(1, "Error creating pipe\n");
+        exit();
+    }
+
+    pid = fork();
+    if (pid == 0) {
+
+        close(pfd[0]);
+
+        pid = getpid();
+        /* Assign the tickets to the child process */
+        if (assign_tickets(pid, tickets[0]) == 0) {
+
+            for (i = 1; i < n; i++) {
+                pid = create_process(tickets[i]);
+                if (pid == -1) {
+                    printf(1, "Error creating child process\n");
+                    exit();
+                }
+                write(pfd[1], &pid, sizeof(int));
+            }
+
+            /* Wait till the tickets of child processes are fixed */
+            /*if (wait_for_tickets_to_set(n, child_pids, tickets) == -1) {
+                printf(1, "Not able to set child processes tickets\n");
+                exit();
+            }*/
+
+            /* Loop forever */
+            while (1);
+        }
+        /* If assigning the tickets to the process fail */
+        else {
+            printf(1, "Error setting the tickets\n");
+            exit();
+        }
+    }
+    /* If the process is parent */
+    else if (pid > 0) {
+
+        close(pfd[1]);
+        child_pids[0] = pid;
+
+        for (i = 1; i < n; i++) {
+            read(pfd[0], &child_pids[i], sizeof(int));
+        }
+
+        return pid;
+    }
+    /* If fork fails */
+    else {
+        return -1;
+    }
+}
+
 /* Main function */
 int main(int argc, char *argv[]) {
 
@@ -113,6 +176,7 @@ int main(int argc, char *argv[]) {
     int parent_pid, parent_tickets;
     processes_info before, after;
     int index1, index2;
+    int temp1, temp2, temp3;
 
     /* Get parent pid */
     parent_pid = getpid();
@@ -139,6 +203,10 @@ int main(int argc, char *argv[]) {
             exit();
         }
     }
+
+    /* --------------------------------------------------------------------- */
+
+    printf(1, "Scheduler Test 1 ...\n");
 
     /* Create the child process and assign tickets to them */
     for (i = 0; i < no_of_children; i++) {
@@ -190,17 +258,138 @@ int main(int argc, char *argv[]) {
         printf(1, "%d\t\t%d\t\t%d\t\t%d\n", i + 1, child_pids[i], after.ticks[index2] - before.ticks[index1], after.tickets[index2]);
     }
 
+    printf(1, "Scheduler Test 1 OK\n");
+
+    /* --------------------------------------------------------------------- */
+
+    if (no_of_children >= 2) {
+
+        printf(1, "Scheduler Test 2 ...\n");
+
+        temp1 = (int)(no_of_children / 2);
+        create_processes(child_pids, tickets, temp1);
+
+        temp2 = no_of_children - temp1;
+        create_processes(child_pids + temp1, tickets + temp1, temp2);
+
+        /* Wait till the tickets of child processes are fixed */
+        if (wait_for_tickets_to_set(no_of_children, child_pids, tickets) == -1) {
+            printf(1, "Not able to set child processes tickets\n");
+            exit();
+        }
+
+        /* Get the process information before the parent goes to sleep */
+        proc_info(&before);
+        /* Let the parent sleep */
+        sleep(timeticks);
+        /* Get the process information after the parent wakes up */
+        proc_info(&after);
+
+        /* Kill all the child processes */
+        //kill(child_pids[0]);
+        //kill(child_pids[temp1]);
+        for (i = 0; i < no_of_children; i++) {
+            kill(child_pids[i]);
+        }
+
+        /* Wait till all child processes are killed */
+        wait();
+        wait();
+
+        /* Print the child process information */
+        printf(1, "CHILD\t\tPID\t\tTICKS\t\tTICKETS\n");
+        for (i = 0; i < no_of_children; i++) {
+
+            /* Get the index of child in process info before the parent going to sleep */
+            index1 = find_index_of_pid(&before, child_pids[i]);
+            /* Get the index of child in process info after the parent wakes up */
+            index2 = find_index_of_pid(&after, child_pids[i]);
+
+            /* If child process not found in process info, skip it */
+            if (index1 == -1 || index2 == -1) {
+                printf(1, "Child Process with pid %d not found in process list\n", child_pids[i]);
+                continue;
+            }
+            printf(1, "%d\t\t%d\t\t%d\t\t%d\n", i + 1, child_pids[i], after.ticks[index2] - before.ticks[index1], after.tickets[index2]);
+        }
+        printf(1, "Scheduler Test 2 OK\n");
+    }
+
+    /* --------------------------------------------------------------------- */
+
+    if (no_of_children >= 3) {
+
+        printf(1, "Scheduler Test 3 ...\n");
+
+        temp1 = (int)(no_of_children / 3);
+        create_processes(child_pids, tickets, temp1);
+
+        temp2 = (int)((no_of_children - temp1) / 2);
+        create_processes(child_pids + temp1, tickets + temp1, temp2);
+
+        temp3 = no_of_children - temp1 - temp2;
+        create_processes(child_pids + temp1 + temp2, tickets + temp1 + temp2, temp3);
+
+        /* Wait till the tickets of child processes are fixed */
+        if (wait_for_tickets_to_set(no_of_children, child_pids, tickets) == -1) {
+            printf(1, "Not able to set child processes tickets\n");
+            exit();
+        }
+
+        /* Get the process information before the parent goes to sleep */
+        proc_info(&before);
+        /* Let the parent sleep */
+        sleep(timeticks);
+        /* Get the process information after the parent wakes up */
+        proc_info(&after);
+
+        /* Kill all the child processes */
+        //kill(child_pids[0]);
+        //kill(child_pids[temp1]);
+        //kill(child_pids[temp1 + temp2]);
+        for (i = 0; i < no_of_children; i++) {
+            kill(child_pids[i]);
+        }
+
+        /* Wait till all child processes are killed */
+        wait();
+        wait();
+        wait();
+
+        /* Print the child process information */
+        printf(1, "CHILD\t\tPID\t\tTICKS\t\tTICKETS\n");
+        for (i = 0; i < no_of_children; i++) {
+
+            /* Get the index of child in process info before the parent going to sleep */
+            index1 = find_index_of_pid(&before, child_pids[i]);
+            /* Get the index of child in process info after the parent wakes up */
+            index2 = find_index_of_pid(&after, child_pids[i]);
+
+            /* If child process not found in process info, skip it */
+            if (index1 == -1 || index2 == -1) {
+                printf(1, "Child Process with pid %d not found in process list\n", child_pids[i]);
+                continue;
+            }
+            printf(1, "%d\t\t%d\t\t%d\t\t%d\n", i + 1, child_pids[i], after.ticks[index2] - before.ticks[index1], after.tickets[index2]);
+        }
+        printf(1, "Scheduler Test 3 OK\n");
+    }
+
+    /* --------------------------------------------------------------------- */
+
     /* Print the parent process (this process) information */
-    printf(1, "THIS PROCESS :\n");
+    printf(1, "PARENT PROCESS :\n");
     proc_info(&after);
 
     /* Get the parent process index in process info */
     index1 = find_index_of_pid(&after, parent_pid);
     if (index1 == -1) {
-        printf(1, "THIS PROCESS not found in process list\n");
+        printf(1, "PARENT PROCESS not found in process list\n");
         exit();
     }
     printf(1, "PID = %d\t\tTICKS = %d\t\t TICKETS = %d\n", parent_pid, after.ticks[index1], after.tickets[index1]);
+
+
 
     exit();
 }

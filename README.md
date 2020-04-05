@@ -103,3 +103,5 @@ This project implements the lottery scheduler in xv6, a unix based operating sys
   file).
 - The number of CPU to be used for xv6 can be configured by changing the 'CPU'
   variable in the *Makefile*.
+- While testing, if number of child process to be created is more and prompt
+  shows 'too many arguments', change the value of *MAXARGS* in *sh.c*.
