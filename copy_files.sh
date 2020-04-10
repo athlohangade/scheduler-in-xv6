@@ -9,7 +9,10 @@ cp -v proc.c ./xv6/
 cp -v proc.h ./xv6/
 cp -v ps.c ./xv6/
 cp -v rand.c ./xv6/
+cp -v sched_test_utils.c ./xv6/
+cp -v sched_test_utils.h ./xv6/
 cp -v scheduler-test.c ./xv6/
+cp -v sh.c ./xv6/
 cp -v sleep.c ./xv6/
 cp -v syscall.c ./xv6/
 cp -v syscall.h ./xv6/
