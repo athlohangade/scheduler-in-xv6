@@ -1,20 +1,24 @@
 ## Modified
 
 1)  defs.h
-2)  Makefile
-3)  param.h
-4)  proc.c
-5)  proc.h
-6)  syscall.c
-7)  syscall.h
-8)  sysproc.c
-9)  types.h
-10) user.h
-11) usys.S
+2)  init.c
+3)  Makefile
+4)  param.h
+5)  proc.c
+6)  proc.h
+7)  sh.c
+8)  syscall.c
+9)  syscall.h
+10) sysproc.c
+11) types.h
+12) user.h
+13) usys.S
 
 ## Added
 1) assign-tickets.c
 2) ps.c
 3) rand.c
-4) scheduler-test.c
-5) sleep.c
+4) sched_test_utils.c
+5) sched_test_utils.h
+6) scheduler-test.c
+7) sleep.c

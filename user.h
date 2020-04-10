@@ -25,6 +25,7 @@ int sleep(int);
 int uptime(void);
 int proc_info(processes_info*);
 int assign_tickets(int, int);
+int change_schedorder_flag(int);
 
 // ulib.c
 int stat(const char*, struct stat*);

@@ -105,6 +105,7 @@ extern int sys_write(void);
 extern int sys_uptime(void);
 extern int sys_proc_info(void);
 extern int sys_assign_tickets(void);
+extern int sys_change_schedorder_flag(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -130,6 +131,7 @@ static int (*syscalls[])(void) = {
 [SYS_close]   sys_close,
 [SYS_proc_info] sys_proc_info,
 [SYS_assign_tickets] sys_assign_tickets,
+[SYS_change_schedorder_flag] sys_change_schedorder_flag,
 };
 
 void

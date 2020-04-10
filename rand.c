@@ -1,5 +1,7 @@
 #include "types.h"
 
+#define START_STATE     0xAE57u
+
 /* Algorithm : Linear Feedback Shift Register Random Number Generator
  * Tap bits : 16 14 13 11
  * Feedback Polynomial : x^16 + x^14 + x^13 + x^11 + 1
@@ -7,7 +9,7 @@
 ushort generate_random_number(ushort limit) {
 
     /* Any nonzero start state will work */
-    static ushort start_state = 0xACE1u;
+    static ushort start_state = START_STATE;
     /* 16-bit shift register */
     ushort lfsr;
     /* For storing the result of XORing of tap bits to be appended */

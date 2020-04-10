@@ -13,6 +13,17 @@ struct process_table {
 };
 struct process_table ptable;
 
+// For testing purpose
+#ifdef SCHED_TEST
+struct proc_sched_test {
+    int pid;
+    int ticks;
+    int startflag;
+    struct spinlock lock;
+};
+struct proc_sched_test proc_sched = {0, 0, 0};
+#endif
+
 static struct proc *initproc;
 
 int nextpid = 1;
@@ -39,10 +50,10 @@ struct cpu*
 mycpu(void)
 {
   int apicid, i;
-  
+
   if(readeflags()&FL_IF)
     panic("mycpu called with interrupts enabled\n");
-  
+
   apicid = lapicid();
   // APIC IDs are not guaranteed to be contiguous. Maybe we should have
   // a reverse map, or reserve a register to store &cpus[i].
@@ -127,7 +138,7 @@ userinit(void)
   extern char _binary_initcode_start[], _binary_initcode_size[];
 
   p = allocproc();
-  
+
   initproc = p;
   if((p->pgdir = setupkvm()) == 0)
     panic("userinit: out of memory?");
@@ -278,7 +289,7 @@ wait(void)
   struct proc *p;
   int havekids, pid;
   struct proc *curproc = myproc();
-  
+
   acquire(&ptable.lock);
   for(;;){
     // Scan through table looking for exited children.
@@ -327,81 +338,105 @@ wait(void)
 void
 scheduler(void)
 {
-  struct proc *p;
-  struct cpu *c = mycpu();
-  c->proc = 0;
+    struct proc *p;
+    struct cpu *c = mycpu();
+    c->proc = 0;
 
-  // Local Variables to track the tickets
-  int total_tickets = 0;
-  int ticket_no;
-  int tickets_passed = 0;
+    // Local Variables to track the tickets
+    int total_tickets = 0;
+    int ticket_no;
+    int tickets_passed = 0;
 
-  for(;;){
+#ifdef SCHED_TEST
+    initlock(&proc_sched.lock, "proc_sched");
+#endif
+    for(;;){
 
-    // Enable interrupts on this processor.
-    sti();
+        // Enable interrupts on this processor.
+        sti();
 
-    // Acquire the process table lock
-    acquire(&ptable.lock);
+        // Acquire the process table lock
+        acquire(&ptable.lock);
 
-    // Loop over process table to calculate the total number of tickets of
-    // RUNNABLE processes
-    for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
-      if (p->state == RUNNABLE) {
-        total_tickets += p->tickets;
-      }
-    }
-
-    // If RUNNABLE process or processes are found
-    if (total_tickets > 0) {
-
-        // Generate random number
-        ticket_no = generate_random_number(total_tickets);
-
-        // Find the process to be scheduled using the random number generated
-        // (the winning process)
+        // Loop over process table to calculate the total number of tickets of
+        // RUNNABLE processes
         for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
             if (p->state == RUNNABLE) {
-                tickets_passed += p->tickets;
-                if (tickets_passed > ticket_no) {
-                    break;
-                }
+                total_tickets += p->tickets;
             }
         }
 
-        // Switch to the winning process.  It is the process's job to release
-        // ptable.lock and then reacquire it before jumping back here.
+        // If RUNNABLE process or processes are found
+        if (total_tickets > 0) {
 
-        // Set the process on this CPU
-        c->proc = p;
-        // Switch to user virtual memory
-        switchuvm(p);
-        // Increment the ticks count as it is going to be scheduled for this tick
-        p->ticks++;
-        // Set the process state to running
-        p->state = RUNNING;
+            // Generate random number
+            ticket_no = generate_random_number(total_tickets);
 
-        //cprintf("Total_tickets = %d, random_ticket_no = %d\n", total_tickets, ticket_no);
+            // Find the process to be scheduled using the random number generated
+            // (the winning process)
+            for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+                if (p->state == RUNNABLE) {
+                    tickets_passed += p->tickets;
+                    if (tickets_passed > ticket_no) {
+                        break;
+                    }
+                }
+            }
 
-        // Switch to the kernel stack of the process that is going to be
-        // scheduled now
-        swtch(&(c->scheduler), p->context);
+            // Switch to the winning process.  It is the process's job to release
+            // ptable.lock and then reacquire it before jumping back here.
 
-        // Switch to kernel virtual memory
-        switchkvm();
+            // Set the process on this CPU
+            c->proc = p;
+            // Switch to user virtual memory
+            switchuvm(p);
+            // Increment the ticks count as it is going to be scheduled for this tick
+            p->ticks++;
+            // Set the process state to running
+            p->state = RUNNING;
 
-        // Process is done running for now.
-        // It should have changed its p->state before coming back.
-        // Restore the variables.
-        c->proc = 0;
-        total_tickets = 0;
-        tickets_passed = 0;
+#ifdef SCHED_TEST
+            acquire(&proc_sched.lock);
+            if (proc_sched.startflag == 1) {
+
+                if (proc_sched.pid == 0) {
+                    proc_sched.pid = p->pid;
+                    proc_sched.ticks++;
+                }
+                else {
+                    if (p->pid == proc_sched.pid) {
+                        proc_sched.ticks++;
+                    }
+                    else {
+                        cprintf("PID = %d, TICKS = %d\n", proc_sched.pid, proc_sched.ticks);
+                        proc_sched.pid = p->pid;
+                        proc_sched.ticks = 1;
+                    }
+                }
+            }
+            release(&proc_sched.lock);
+#endif
+
+            // Switch to the kernel stack of the process that is going to be
+            // scheduled now
+            swtch(&(c->scheduler), p->context);
+
+            // Switch to kernel virtual memory
+            switchkvm();
+
+            // Process is done running for now.
+            // It should have changed its p->state before coming back.
+            // Restore the variables.
+            c->proc = 0;
+            total_tickets = 0;
+            tickets_passed = 0;
+        }
+
+        // Release the lock to let the process running on other processor to set
+        // any process's state to RUNNABLE. This is case when no RUNNABLE process is
+        // found.
+        release(&ptable.lock);
     }
-    // Release the lock to let the process running on other processor to set
-    // any process's state to RUNNABLE. This is case when no RUNNABLE process is
-    // found.
-    release(&ptable.lock);
-  }
 }
 
 // Enter scheduler.  Must hold only ptable.lock
@@ -467,7 +502,7 @@ void
 sleep(void *chan, struct spinlock *lk)
 {
   struct proc *p = myproc();
-  
+
   if(p == 0)
     panic("sleep");
 

@@ -90,6 +90,7 @@ int create_process(int tickets) {
     }
 }
 
+/* Function to fork multiple child process and assign tickets */
 int create_more_processes(int *child_pids, int *tickets, int n) {
 
     int i;
@@ -155,6 +156,7 @@ int create_more_processes(int *child_pids, int *tickets, int n) {
     }
 }
 
+/* Function to fork nested child process and assign tickets */
 int create_nested_processes(int *child_pids, int *tickets, int n) {
 
     /* Stopping condition */
@@ -216,5 +218,28 @@ int create_nested_processes(int *child_pids, int *tickets, int n) {
     /* If fork fails */
     else {
         return -1;
+    }
+}
+
+/* Function to print the scheduler test result */
+void print_test_result(int no_of_children, processes_info *before, processes_info *after, int *child_pids) {
+
+    int i, index1, index2;
+
+    /* Print the child process information */
+    printf(1, "SUMMARY :\nCHILD\t\tPID\t\tTICKS\t\tTICKETS\n");
+    for (i = 0; i < no_of_children; i++) {
+
+        /* Get the index of child in process info before the parent going to sleep */
+        index1 = find_index_of_pid(before, child_pids[i]);
+        /* Get the index of child in process info after the parent wakes up */
+        index2 = find_index_of_pid(after, child_pids[i]);
+
+        /* If child process not found in process info, skip it */
+        if (index1 == -1 || index2 == -1) {
+            printf(1, "Child Process with pid %d not found in process list\n", child_pids[i]);
+            continue;
+        }
+        printf(1, "%d\t\t%d\t\t%d\t\t%d\n", i + 1, child_pids[i], after->ticks[index2] - before->ticks[index1], after->tickets[index2]);
     }
 }
