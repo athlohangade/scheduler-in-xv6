@@ -6,9 +6,9 @@
 #define MAX_CHILD_PROCESS               16
 #define PRINT_SCHED_ORDER               1
 
-#define AUTO_TEST_PARENT_SLEEPTICKS     100
-#define AUTO_TEST_PARENT_TICKETS        100
-#define AUTO_TEST_MAX_CHILD             12
+#define AUTO_TEST_MAX_CHILD             ((10) % (MAX_CHILD_PROCESS + 1))
+#define AUTO_TEST_PARENT_SLEEPTICKS     ((AUTO_TEST_MAX_CHILD) * (100))
+#define AUTO_TEST_PARENT_TICKETS        500
 #define AUTO_TEST_FIRST_CHILD_TICKETS   100
 #define AUTO_TEST_TICKET_INCR           ((int)((MAX_TICKETS_PER_PROCESS) - (AUTO_TEST_FIRST_CHILD_TICKETS)) \
                                         / (AUTO_TEST_MAX_CHILD))
@@ -152,9 +152,11 @@ int main(int argc, char *argv[]) {
         printf(1, "Scheduler Test 2 ...\n");
         printf(1, "Scheduling Order :\n");
 
+        /* Create a process that creates multiple processes */
         temp1 = (int)(no_of_children / 2);
         create_more_processes(child_pids, tickets, temp1);
 
+        /* Create a process that creates multiple processes */
         temp2 = no_of_children - temp1;
         create_more_processes(child_pids + temp1, tickets + temp1, temp2);
 
@@ -199,13 +201,15 @@ int main(int argc, char *argv[]) {
         printf(1, "Scheduler Test 3 ...\n");
         printf(1, "Scheduling Order :\n");
 
-
+        /* Create a process that creates multiple processes */
         temp1 = (int)(no_of_children / 3);
         create_more_processes(child_pids, tickets, temp1);
 
+        /* Create a process that creates multiple processes */
         temp2 = (int)((no_of_children - temp1) / 2);
         create_more_processes(child_pids + temp1, tickets + temp1, temp2);
 
+        /* Create a process that creates multiple processes */
         temp3 = no_of_children - temp1 - temp2;
         create_more_processes(child_pids + temp1 + temp2, tickets + temp1 + temp2, temp3);
 
@@ -248,7 +252,7 @@ int main(int argc, char *argv[]) {
     printf(1, "Scheduler Test 4 ...\n");
     printf(1, "Scheduling Order :\n");
 
-    /* Create nested processes */
+    /* Create a process that creates nested processes */
     create_nested_processes(child_pids, tickets, no_of_children);
 
     /* Wait till the tickets of child processes are fixed */
@@ -290,14 +294,66 @@ int main(int argc, char *argv[]) {
         printf(1, "Scheduler Test 5 ...\n");
         printf(1, "Scheduling Order :\n");
 
-        /* Create nested processes */
+        /* Create a process that creates nested processes */
         temp1 = (int)(no_of_children / 3);
         create_nested_processes(child_pids, tickets, temp1);
 
-        /* Create multiple child process */
-        create_more_processes(child_pids + temp1, tickets + temp1, temp1);
+        /* Create a process that creates nested processes */
+        temp2 = (int)((no_of_children - temp1) / 2);
+        create_nested_processes(child_pids + temp1, tickets + temp1, temp2);
 
-        /* Create multiple child process */
+        /* Create a process that creates nested processes */
+        temp3 = no_of_children - temp1 - temp2;
+        create_nested_processes(child_pids + temp1 + temp2, tickets + temp1 + temp2, temp3);
+
+        /* Wait till the tickets of child processes are fixed */
+        if (wait_for_tickets_to_set(no_of_children, child_pids, tickets) == -1) {
+            printf(1, "Not able to set child processes tickets\n");
+            exit();
+        }
+
+        /* Set/clear the scheduling order flag */
+        change_schedorder_flag(PRINT_SCHED_ORDER);
+        /* Get the process information before the parent goes to sleep */
+        proc_info(&before);
+        /* Let the parent sleep */
+        sleep(timeticks);
+        /* Get the process information after the parent wakes up */
+        proc_info(&after);
+        /* Clear the scheduling order flag */
+        change_schedorder_flag(0);
+
+        /* Kill all the child processes */
+        for (i = 0; i < no_of_children; i++) {
+            kill(child_pids[i]);
+        }
+
+        /* Wait till all child processes are killed */
+        wait();
+
+        /* Print the child process information */
+        print_test_result(no_of_children, &before, &after, child_pids);
+
+        printf(1, "Scheduler Test 5 OK\n");
+    }
+
+    /* --------------------------------------------------------------------- */
+
+    /* Run next test if processes to be created are enough */
+    if (no_of_children >= 3) {
+
+        printf(1, "-----------------------\n");
+        printf(1, "Scheduler Test 6 ...\n");
+        printf(1, "Scheduling Order :\n");
+
+        /* Create a process that creates nested processes */
+        temp1 = (int)(no_of_children / 3);
+        create_nested_processes(child_pids, tickets, temp1);
+
+        /* Create a process that creates nested processes */
+        create_nested_processes(child_pids + temp1, tickets + temp1, temp1);
+
+        /* Create a process that creates multiple processes */
         temp2 = no_of_children - (2 * temp1);
         create_more_processes(child_pids + (2 * temp1), tickets + (2 * temp1), temp2);
 
@@ -329,7 +385,7 @@ int main(int argc, char *argv[]) {
         /* Print the child process information */
         print_test_result(no_of_children, &before, &after, child_pids);
 
-        printf(1, "Scheduler Test 5 OK\n");
+        printf(1, "Scheduler Test 6 OK\n");
     }
 
     /* --------------------------------------------------------------------- */

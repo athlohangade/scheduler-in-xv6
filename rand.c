@@ -1,6 +1,6 @@
 #include "types.h"
 
-#define START_STATE     0xAE57u
+#define START_STATE     0xACE1u
 
 /* Algorithm : Linear Feedback Shift Register Random Number Generator
  * Tap bits : 16 14 13 11
