@@ -174,6 +174,8 @@ int sys_change_schedorder_flag(void) {
     // Get the argument
     if (argint(0, &flag) < 0)
         return -1;
+    if (flag != 0 && flag != 1)
+        return -1;
 
 #ifdef SCHED_TEST
     // Acquire lock, change flag and release
