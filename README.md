@@ -142,6 +142,10 @@ This project implements the lottery scheduler in xv6, a unix based operating sys
        ticks than expected results. If the number of process to be forked are
        large give sufficient sleep ticks (In auto mode, sleep ticks = 100 *
        number of child process).
+    4. Testing screenshots are also uploaded on repo. 3 tests are done. For 1st
+       test, scheduling order is printed. For next two tests, scheduling order
+       is not printed as it is a long sequence. The final summary is printed for
+       these 2 tests. 2nd test is auto and 3rd is manual.
 
 ---
 

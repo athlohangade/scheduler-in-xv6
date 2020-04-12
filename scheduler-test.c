@@ -99,7 +99,8 @@ int main(int argc, char *argv[]) {
 
     printf(1, "-----------------------\n");
     printf(1, "Scheduler Test 1 ...\n");
-    printf(1, "Scheduling Order :\n");
+    if (PRINT_SCHED_ORDER)
+        printf(1, "Scheduling Order :\n");
 
     /* Create the child process and assign tickets to them */
     for (i = 0; i < no_of_children; i++) {
@@ -150,7 +151,8 @@ int main(int argc, char *argv[]) {
 
         printf(1, "-----------------------\n");
         printf(1, "Scheduler Test 2 ...\n");
-        printf(1, "Scheduling Order :\n");
+        if (PRINT_SCHED_ORDER)
+            printf(1, "Scheduling Order :\n");
 
         /* Create a process that creates multiple processes */
         temp1 = (int)(no_of_children / 2);
@@ -199,7 +201,8 @@ int main(int argc, char *argv[]) {
 
         printf(1, "-----------------------\n");
         printf(1, "Scheduler Test 3 ...\n");
-        printf(1, "Scheduling Order :\n");
+        if (PRINT_SCHED_ORDER)
+            printf(1, "Scheduling Order :\n");
 
         /* Create a process that creates multiple processes */
         temp1 = (int)(no_of_children / 3);
@@ -250,7 +253,8 @@ int main(int argc, char *argv[]) {
 
     printf(1, "-----------------------\n");
     printf(1, "Scheduler Test 4 ...\n");
-    printf(1, "Scheduling Order :\n");
+    if (PRINT_SCHED_ORDER)
+        printf(1, "Scheduling Order :\n");
 
     /* Create a process that creates nested processes */
     create_nested_processes(child_pids, tickets, no_of_children);
@@ -292,7 +296,8 @@ int main(int argc, char *argv[]) {
 
         printf(1, "-----------------------\n");
         printf(1, "Scheduler Test 5 ...\n");
-        printf(1, "Scheduling Order :\n");
+        if (PRINT_SCHED_ORDER)
+            printf(1, "Scheduling Order :\n");
 
         /* Create a process that creates nested processes */
         temp1 = (int)(no_of_children / 3);
@@ -344,7 +349,8 @@ int main(int argc, char *argv[]) {
 
         printf(1, "-----------------------\n");
         printf(1, "Scheduler Test 6 ...\n");
-        printf(1, "Scheduling Order :\n");
+        if (PRINT_SCHED_ORDER)
+            printf(1, "Scheduling Order :\n");
 
         /* Create a process that creates nested processes */
         temp1 = (int)(no_of_children / 3);
