@@ -122,6 +122,9 @@ This project implements the lottery scheduler in xv6, a unix based operating sys
     - Printing the difference of ticks before and after parent going to sleep let us
       know for how many ticks individual child process was scheduled. The program
       also outputs the scheduling order.
+    - If enough child process tickets are not provided, some testcase may get
+      skipped. Eg: Testcase 3 require atleast 3 tickets for 3 child process. If
+      user enter less than 3 tickets, this testcase will be skipped.
 
 - In **auto** testing mode, user need to type `scheduler-test auto` on the xv6
   prompt. The testing process as that of manual mode but doesn't need to provide
