@@ -164,7 +164,7 @@ This project implements the lottery scheduler in xv6, a unix based operating sys
 - Increase *MAX_CHILD_PROCESS* MACRO in the *scheduler-test.c* file to fork more
   process.
 - While testing, if number of child process to be created is more and prompt
-  shows 'too many arguments', change the value of *MAXARGS* in *sh.c*.
+  shows 'too many arguments', increase the value of *MAXARGS* in *sh.c*.
 - For some testcase (i.e. testcase 4, 5, 6 where forking nested processes are
   involved) its implementation consists of creating pipes. Multiple such pipes
   are created. So, testing program make display error for creating pipes. To 
