@@ -34,7 +34,8 @@ This project implements the lottery scheduler in xv6, a unix based operating sys
 - Open the *xv6* folder and type `make qemu-nox` to run qemu on existing
   terminal. Or type `make qemu` to run qemu on new window.
 - For **testing**, type `make qemu-nox TEST_FLAG=SCHED_TEST`. This sets the
-  testing flag to *SCHED_TEST* in Makefile and enables code required for testing.
+  testing flag to *SCHED_TEST* in Makefile and enables some additional code
+  required for testing.
 - To clean the files generated during compilation, type `make clean`.
 - To exit qemu, type `Ctrl-A` followed by letter `X`.
 
@@ -101,22 +102,26 @@ This project implements the lottery scheduler in xv6, a unix based operating sys
 ![Testcase 1, 2, 3](./diagram1.png)
 ![Testcase 4, 5, 6](./diagram2.png)
 
-- Testing can be done in two mode : **auto** and **manual**.
-- In **manual** testing more, the test program takes input :
-    1. The timeticks for which parent process must sleep. (Generally **1 tick = 10ms**,
+- Testing can be done in two mode : **manual** and **auto**.
+- **Manual** testing mode :
+    - In this, the test program takes input :
+        1. The timeticks for which parent process must sleep. (Generally **1 tick = 10ms**,
    depends on cpu bus freq. Eg: *300 ticks* corresponds to *3 sec* sleep).
-    2. The tickets to be assigned for the parent process.
-    3. The tickets to be assigned for the child processes. Depending on number
+        2. The tickets to be assigned for the parent process.
+        3. The tickets to be assigned for the child processes. Depending on number
        of child process tickets given as input, the test program decides the
        number of children to be forked.
-- Then the program forks required children and assign their tickets.
-- Then a system call is made to get info about child processes.
-- Then the program goes to sleep for some timeticks entered by user and allow
-  the child processes to get scheduled.
-- Then again system call is made to get info about child processes.
-- Printing the difference of ticks before and after parent going to sleep let us
-  know for how many ticks individual child process was scheduled. The program
-  also outputs the scheduling order.
+
+    - Then the program forks required children and assign their tickets.
+    - Then a system call is made to get info about child processes.
+    - Then the program goes to sleep for some timeticks entered by user and allow
+      the child processes to get scheduled.
+    - Then again system call is made to get info about child processes.
+    - Then kill the child process. The child process might become **zombie** but the
+      init process cleans its struct proc.
+    - Printing the difference of ticks before and after parent going to sleep let us
+      know for how many ticks individual child process was scheduled. The program
+      also outputs the scheduling order.
 
 - In **auto** testing mode, user need to type `scheduler-test auto` on the xv6
   prompt. The testing process as that of manual mode but doesn't need to provide
